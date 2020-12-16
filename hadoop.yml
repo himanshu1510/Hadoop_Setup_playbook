@@ -117,7 +117,7 @@
     shell: "systemctl stop firewalld"
   
   - name: "start datanode"
-    shell: "hadoop-daemon.sh  retart datanode"
+    shell: "hadoop-daemon.sh  stop datanode"
     ignore_errors: true
 
 
