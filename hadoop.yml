@@ -1,0 +1,138 @@
+- hosts: all
+  tasks:
+   - file:
+          state: directory
+          path: "/dvd1"
+   - mount:
+          src: "/dev/cdrom"
+          path: "/dvd1"
+          state: mounted
+          fstype: "iso9660"
+   - yum_repository:
+          baseurl: "/dvd1/AppStream"
+          name: "mydvd1"
+          description: "dvd1 for pacakge"
+          gpgcheck: no
+   - yum_repository:
+          baseurl: "/dvd1/BaseOS"
+          name: "mydvd2"
+          description: "dvd2 for package"
+          gpgcheck: no
+
+   - name: "copy hadoop software"
+     copy:
+          src: "/root/hadoop-1.2.1-1.x86_64.rpm"
+          dest: "/root/hadoop-1.2.1-1.x86_64.rpm"
+
+   - name: "copy jdk software"
+     copy:
+          src: "/root/jdk-8u171-linux-x64.rpm"
+          dest: "/root/jdk-8u171-linux-x64.rpm"
+  
+   - name: "install  jdk software"
+     shell: "rpm -ih jdk-8u171-linux-x64.rpm --force"
+          
+   - name: "install  hadoop software"
+     shell: "rpm -ih hadoop-1.2.1-1.x86_64.rpm --force"
+
+
+- hosts: namenode
+  become: yes
+  tasks:
+  - name: "create directory"
+    file:
+            path: /nn
+            state: directory
+
+  - name: "configure hdfs.xml file"
+    blockinfile:
+      path: "/etc/hadoop/hdfs-site.xml"
+      insertafter: "<configuration>"
+      block:
+              <property>
+              <name>dfs.name.dir</name>
+              <value>/nn</value>
+              </property>
+  - name: "configure hdfs.xml file"
+    blockinfile:
+      path: "/etc/hadoop/core-site.xml"
+      insertafter: "<configuration>"
+      block:
+              <property>
+              <name>fs.default.name</name>
+              <value>hdfs://192.168.185.5:9001</value>
+              </property>
+
+
+  - shell: "echo Y | hadoop namenode -format"
+
+  - selinux:
+          state: disabled
+
+  - name: "stop firewalld"
+    shell: "systemctl stop firewalld"
+
+  - name: "stop namenode"
+    shell: "hadoop-daemon.sh stop namenode"
+    ignore_errors: true
+
+  - name: "start namenode"
+    shell: "hadoop-daemon.sh start namenode"
+
+  - name: "jps"
+    shell: "jps"
+
+- hosts: datanode
+  become: yes
+  tasks:
+  - name: "create directory"
+    file:
+            path: /dn
+            state: directory
+
+
+  - name: "configure hdfs.xml file"
+    blockinfile:
+      path: "/etc/hadoop/hdfs-site.xml"
+      insertafter: "<configuration>"
+      block:
+              <property>
+              <name>dfs.data.dir</name>
+              <value>/dn</value>
+              </property>
+  - name: "configure hdfs.xml file"
+    blockinfile:
+      path: "/etc/hadoop/core-site.xml"
+      insertafter: "<configuration>"
+      block:
+              <property>
+              <name>fs.default.name</name>
+              <value>hdfs://192.168.185.5:9001</value>
+              </property>
+
+  - selinux:
+          state: disabled
+
+  - name: "stop firewalld"
+    shell: "systemctl stop firewalld"
+  
+  - name: "start datanode"
+    shell: "hadoop-daemon.sh  retart datanode"
+    ignore_errors: true
+
+
+  - name: "start namenode"
+    shell: "hadoop-daemon.sh  start datanode"
+
+  - name: "jps"
+    shell: "jps"
+
+
+
+
+
+
+
+
+
+
